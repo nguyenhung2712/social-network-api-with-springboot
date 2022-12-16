@@ -9,9 +9,11 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +29,7 @@ import com.ntth.socialnetwork.repository.PostRepository;
 import com.ntth.socialnetwork.repository.UserRepository;
 
 @RestController
+@CrossOrigin
 @RequestMapping("/api/post")
 public class PostController {
 	@Autowired
@@ -36,6 +39,7 @@ public class PostController {
 	PostRepository postRepository;
 	
 	@GetMapping("/all")
+	@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 	public ResponseEntity<List<Post>> getAllPosts() {
 		try {
 			List<Post> posts = new ArrayList<Post>();
@@ -51,6 +55,7 @@ public class PostController {
 	}
 	
 	@GetMapping("/{id}")
+	@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 	public ResponseEntity<?> getPostById(@PathVariable("id") Long id) {
 		Optional<Post> post = postRepository.findById(id);
 		
@@ -62,13 +67,14 @@ public class PostController {
 	}
 	
 	@PostMapping("/add")
+	@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 	public ResponseEntity<?> createPost(@Valid @RequestBody PostRequest postRequest) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		String username = authentication.getName();
 		User currentUser = userRepository.findByUsername(username)
 				.orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
 		
-		try {
+		try {	
 			Post newPost = postRepository
 					.save(new Post(postRequest.getContent(), postRequest.getImage(), new java.sql.Date(System.currentTimeMillis()), currentUser));
 			return new ResponseEntity<>(newPost, HttpStatus.CREATED);
@@ -93,6 +99,7 @@ public class PostController {
 	}*/
 	
 	@DeleteMapping("/remove/{id}")
+	@PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
 	public ResponseEntity<HttpStatus> deletePostById(@PathVariable("id") Long id) {
 		try {
 			postRepository.deleteById(id);

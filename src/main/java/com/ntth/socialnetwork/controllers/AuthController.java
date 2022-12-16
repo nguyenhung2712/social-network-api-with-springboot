@@ -20,16 +20,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ntth.socialnetwork.exceptions.TokenRefreshException;
 import com.ntth.socialnetwork.models.ERole;
+import com.ntth.socialnetwork.models.RefreshToken;
 import com.ntth.socialnetwork.models.Role;
 import com.ntth.socialnetwork.models.User;
 import com.ntth.socialnetwork.payload.request.LoginRequest;
 import com.ntth.socialnetwork.payload.request.SignupRequest;
+import com.ntth.socialnetwork.payload.request.TokenRefreshRequest;
 import com.ntth.socialnetwork.payload.response.JwtResponse;
 import com.ntth.socialnetwork.payload.response.MessageResponse;
+import com.ntth.socialnetwork.payload.response.TokenRefreshResponse;
 import com.ntth.socialnetwork.repository.RoleRepository;
 import com.ntth.socialnetwork.repository.UserRepository;
 import com.ntth.socialnetwork.security.jwt.JwtUtils;
+import com.ntth.socialnetwork.security.services.RefreshTokenService;
 import com.ntth.socialnetwork.security.services.UserDetailsImpl;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -44,7 +49,10 @@ public class AuthController {
 
   @Autowired
   RoleRepository roleRepository;
-
+  
+  @Autowired
+  RefreshTokenService refreshTokenService;
+  
   @Autowired
   PasswordEncoder encoder;
 
@@ -64,12 +72,10 @@ public class AuthController {
     List<String> roles = userDetails.getAuthorities().stream()
         .map(item -> item.getAuthority())
         .collect(Collectors.toList());
-
-    return ResponseEntity.ok(new JwtResponse(jwt, 
-                         userDetails.getId(), 
-                         userDetails.getUsername(), 
-                         userDetails.getEmail(), 
-                         roles));
+    
+    RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+    return ResponseEntity.ok(new JwtResponse(jwt, refreshToken.getToken(), userDetails.getId(),
+            userDetails.getUsername(), userDetails.getEmail(), roles));
   }
 
   @PostMapping("/signup")
@@ -125,5 +131,20 @@ public class AuthController {
     userRepository.save(user);
 
     return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+  }
+  
+  @PostMapping("/refreshtoken")
+  public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+    String requestRefreshToken = request.getRefreshToken();
+
+    return refreshTokenService.findByToken(requestRefreshToken)
+	        .map(refreshTokenService::verifyExpiration)
+	        .map(RefreshToken::getUser)
+	        .map(user -> {
+	          String token = jwtUtils.generateTokenFromUsername(user.getUsername());
+	          return ResponseEntity.ok(new TokenRefreshResponse(token, requestRefreshToken));
+	        })
+        .orElseThrow(() -> new TokenRefreshException(requestRefreshToken,
+            "Refresh token is not in database!"));
   }
 }

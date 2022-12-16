@@ -1,17 +1,11 @@
 package com.ntth.socialnetwork.payload.request;
 
-import javax.persistence.Column;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 public class PostRequest {
-	@NotBlank
 	@Size(max = 150)
-	@Column(name = "content", nullable = false)
 	private String content;
 
-	@NotBlank
-	@Column(name = "image", nullable = false)
 	private String image;
 
 	public String getContent() {

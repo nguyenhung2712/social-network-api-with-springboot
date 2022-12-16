@@ -3,6 +3,7 @@ package com.ntth.socialnetwork.models;
 import java.sql.Date;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -39,14 +40,14 @@ public class Post {
     @JoinColumn(name="user_id", nullable=false)
     private User user;
 	
-	@OneToMany(mappedBy="post")
+	@OneToMany(mappedBy="post", cascade = CascadeType.ALL)
   	private Set<PostComment> comment;
 
 	public Post() {
 		super();
 	}
 
-	public Post(@NotBlank String content, @NotBlank String image, Date publishedDate, User user) {
+	public Post(String content, String image, Date publishedDate, User user) {
 		super();
 		this.content = content;
 		this.image = image;

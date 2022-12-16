@@ -39,7 +39,7 @@ public class User {
   
   	@Column(name = "registered_date", nullable = false)
   	private Date registeredDate;
-
+  	
   	@ManyToMany(fetch = FetchType.LAZY)
   	@JoinTable(  name = "user_roles", 
         joinColumns = @JoinColumn(name = "user_id"), 
@@ -51,6 +51,9 @@ public class User {
   	
   	@OneToMany(mappedBy="user")
   	private Set<PostComment> comment;
+  	
+  	@OneToMany(mappedBy="user", cascade = CascadeType.ALL)
+  	private Set<GroupJoinDetails> gpDetailsList;
   	
   	public User() {
   		
